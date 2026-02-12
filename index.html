@@ -1,3 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Bike Live GPS Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+  <!-- Leaflet Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      text-align: center;
+    }
+
+    h2 {
+      background: #1a2980;
+      color: white;
+      padding: 15px;
+      margin: 0;
+    }
+
+    #map {
+      height: 60vh;
+      width: 100%;
+    }
+
+    .info-box {
+      padding: 20px;
+      background: white;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      text-align: left;
+      font-size: 18px;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: green;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>🏍️ Bike Live GPS Tracker</h2>
+
+<div id="map"></div>
+
+<div class="info-box">
+  <div><strong>Latitude:</strong> <span id="lat">--</span></div>
+  <div><strong>Longitude:</strong> <span id="lng">--</span></div>
+  <div><strong>Speed:</strong> <span id="speed">--</span> km/h</div>
+  <div class="status" id="status">Waiting for GPS data...</div>
+</div>
+
 <script>
   // Firebase Configuration
   var firebaseConfig = {
@@ -8,7 +76,7 @@
   firebase.initializeApp(firebaseConfig);
   var db = firebase.database();
 
-  // Initialize Map (Dhaka default)
+  // Initialize map (Default Dhaka location)
   var map = L.map('map').setView([23.81, 90.41], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -17,7 +85,7 @@
 
   var marker = L.marker([23.81, 90.41]).addTo(map);
 
-  // Listen for GPS updates
+  // Listen to Firebase
   db.ref("bikeTracker").on("value", function(snapshot) {
     var data = snapshot.val();
 
@@ -27,24 +95,18 @@
       var lng = parseFloat(data.longitude);
       var speed = parseFloat(data.speed || 0);
 
-      // Move marker
       marker.setLatLng([lat, lng]);
-
-      // Center map
       map.setView([lat, lng], 15);
 
-      // Update info
-      document.getElementById("info").innerHTML =
-        "<strong>Latitude:</strong> " + lat.toFixed(6) + "<br>" +
-        "<strong>Longitude:</strong> " + lng.toFixed(6) + "<br>" +
-        "<strong>Speed:</strong> " + speed.toFixed(1) + " km/h";
+      document.getElementById("lat").innerText = lat.toFixed(6);
+      document.getElementById("lng").innerText = lng.toFixed(6);
+      document.getElementById("speed").innerText = speed.toFixed(1);
 
-      document.getElementById("speed-value").textContent = speed.toFixed(1);
-
-      document.getElementById("last-update").textContent =
-        "Last update: " + new Date().toLocaleTimeString();
-
-      document.getElementById("status").innerHTML = "Live";
+      document.getElementById("status").innerText =
+        "Live • " + new Date().toLocaleTimeString();
     }
   });
 </script>
+
+</body>
+</html>
