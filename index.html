@@ -557,70 +557,47 @@ font-weight:bold;">
   }
   
   // Listen to Firebase for real-time updates
-  db.ref("bikeTracker").on("value", snap => {
-    let d = snap.val();
-    if (d) {
-      let lat = d.latitude;
-      let lng = d.longitude;
-      let speed = d.speed || 0;
-      
-      // Update marker position
-      marker.setLatLng([lat, lng]);
-      
-      // Update accuracy circle if available
-      if (d.accuracy) {
-        accuracyCircle.setLatLng([lat, lng]);
-        accuracyCircle.setRadius(d.accuracy);
-      } else {
-        accuracyCircle.setLatLng([lat, lng]);
-      }
-      
-      // Center map on new position (with smooth transition on larger screens)
-      if (window.innerWidth > 768) {
-        map.setView([lat, lng], 13, {animate: true, duration: 1});
-      } else {
-        map.setView([lat, lng]);
-      }
-      
-      // Calculate distance traveled
-      if (lastPosition) {
-        var distance = map.distance(lastPosition, [lat, lng]) / 1000; // Convert to km
-        totalDistance += distance;
-        document.getElementById('distance-value').textContent = totalDistance.toFixed(2);
-      }
-      lastPosition = [lat, lng];
-      
-      // Update statistics
-      document.getElementById('speed-value').textContent = speed.toFixed(1);
-      document.getElementById('time-value').textContent = formatTime(Date.now() - startTime);
-      
-      // Update battery if available
-      if (d.battery !== undefined) {
-        document.getElementById('battery-value').textContent = d.battery;
-        
-        // Change battery color based on level
-        var batteryElement = document.getElementById('battery-value');
-        batteryElement.style.color = d.battery > 50 ? '#4CAF50' : 
-                                    d.battery > 20 ? '#FF9800' : '#F44336';
-      }
-      
-      // Update info panel
-      document.getElementById("info").innerHTML = `
-        <strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
-        <strong>Speed:</strong> ${speed.toFixed(1)} km/h<br>
-        <strong>Altitude:</strong> ${d.altitude ? d.altitude.toFixed(1) + ' m' : 'N/A'}<br>
-        <strong>Accuracy:</strong> ${d.accuracy ? d.accuracy.toFixed(1) + ' m' : 'N/A'}
-      `;
-      
-      // Update last update time
-      var now = new Date();
-      document.getElementById('last-update').textContent = 'Last update: ' + formatDate(now);
-      
-      // Update status
-      updateCount++;
-      document.getElementById('status').innerHTML = `Live • ${updateCount} updates`;
+db.ref("bikeTracker").on("value", snap => {
+  let d = snap.val();
+  if (d) {
+
+    let lat = d.latitude;
+    let lng = d.longitude;
+    let speed = d.speed || 0;
+
+    marker.setLatLng([lat, lng]);
+    accuracyCircle.setLatLng([lat, lng]);
+    map.setView([lat, lng], 13);
+
+    document.getElementById('speed-value').textContent = speed.toFixed(1);
+
+    document.getElementById("info").innerHTML = `
+      <strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
+      <strong>Speed:</strong> ${speed.toFixed(1)} km/h<br>
+      <strong>Accuracy:</strong> ${d.accuracy ? d.accuracy.toFixed(1) + ' m' : 'N/A'}
+    `;
+
+    document.getElementById('last-update').textContent =
+      'Last update: ' + new Date().toLocaleTimeString();
+
+    // ===== MOVEMENT ALERT =====
+    if (d.movementAlert === true) {
+
+      document.getElementById("alertBanner").style.display = "block";
+      document.getElementById("status").innerHTML = "🚨 Movement Detected!";
+      document.getElementById("status").style.background = "red";
+
+      document.getElementById("alarmSound").play();
+
+    } else {
+
+      document.getElementById("alertBanner").style.display = "none";
+      document.getElementById("status").innerHTML = "Live Tracking";
+      document.getElementById("status").style.background = "";
     }
-  });
+  }
+});
+
   
   // Mobile menu toggle
   document.querySelector('.mobile-menu-btn').addEventListener('click', function() {
