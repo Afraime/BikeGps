@@ -1,78 +1,200 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BikeLive Pro</title>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-    .container { max-width: 1000px; margin: auto; display: grid; gap: 20px; }
-    #map { height: 400px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .stats { display: flex; gap: 20px; justify-content: center; }
-    .card { background: white; padding: 20px; border-radius: 12px; text-align: center; flex: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .val { font-size: 24px; font-weight: bold; display: block; margin: 10px 0; }
-    .btn-gmaps { background: #4285F4; color: white; text-decoration: none; padding: 15px; border-radius: 8px; display: block; text-align: center; font-weight: bold; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BikeLive Pro | Security Dashboard</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #4285F4;
+            --danger: #ff4757;
+            --success: #2ed573;
+            --bg: #0f172a;
+            --card: rgba(30, 41, 59, 0.7);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: #f8fafc; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+
+        /* Full Screen Map Background */
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
+
+        /* Overlay UI */
+        .overlay { position: relative; z-index: 10; pointer-events: none; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
+        .pointer-events { pointer-events: auto; }
+
+        /* Top Bar */
+        .top-bar { display: flex; justify-content: space-between; align-items: flex-start; }
+        .glass-card { background: var(--card); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+
+        .brand h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 1px; color: #fff; }
+        .status-badge { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; margin-top: 5px; color: #94a3b8; }
+        .dot { height: 8px; width: 8px; border-radius: 50%; background: #64748b; transition: 0.3s; }
+        .dot.online { background: var(--success); box-shadow: 0 0 10px var(--success); }
+
+        /* Stats Section */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 20px; width: 300px; }
+        .stat-item { text-align: center; }
+        .stat-item i { font-size: 1.2rem; color: var(--primary); margin-bottom: 8px; }
+        .stat-item span { display: block; font-size: 1.5rem; font-weight: 700; }
+        .stat-item label { font-size: 0.65rem; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; }
+
+        /* Bottom Controls */
+        .bottom-controls { display: flex; justify-content: center; align-items: center; gap: 20px; padding-bottom: 20px; }
+
+        /* Slider Toggle (iOS Style) */
+        .switch-container { display: flex; align-items: center; gap: 15px; background: var(--card); padding: 10px 25px; border-radius: 50px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        .btn-round { height: 60px; width: 60px; border-radius: 50%; background: var(--primary); border: none; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; transition: 0.3s; }
+        .btn-round:hover { transform: scale(1.1); }
+
+        /* Movement Indicator */
+        .motion-card { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); padding: 10px 30px; border-radius: 15px; font-weight: 700; transition: 0.5s; font-size: 0.9rem; }
+        .motion-idle { background: rgba(30, 41, 59, 0.9); color: #94a3b8; }
+        .motion-alert { background: var(--danger); color: white; animation: pulse 1s infinite; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+    </style>
 </head>
 <body>
 
-<div class="container">
-  <div id="map"></div>
-  
-  <div class="stats">
-    <div class="card">
-      <i class="fas fa-bolt" id="bat-icon"></i>
-      <span class="val"><span id="battery-pct">--</span>%</span>
-      <small>Battery Level</small>
+    <div id="map"></div>
+
+    <div class="overlay">
+        <div class="top-bar">
+            <div class="glass-card pointer-events">
+                <div class="brand">
+                    <h1>BIKE<span style="color:var(--primary)">LIVE</span> PRO</h1>
+                    <div class="status-badge">
+                        <div id="connection-dot" class="dot"></div>
+                        <span id="connection-text">DEVICE OFFLINE</span>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <i class="fas fa-battery-three-quarters"></i>
+                        <span id="battery-val">--</span>
+                        <label>Battery %</label>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-gauge-high"></i>
+                        <span id="speed-val">0.0</span>
+                        <label>KM/H</label>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-round pointer-events" onclick="openGoogleMaps()">
+                <i class="fab fa-google"></i>
+            </button>
+        </div>
+
+        <div id="motion-status" class="motion-card motion-idle">
+            <i class="fas fa-parking"></i> STATIONARY
+        </div>
+
+        <div class="bottom-controls">
+            <div class="switch-container pointer-events">
+                <span id="arm-text" style="font-weight: 700; color: #94a3b8;">DISARMED</span>
+                <label class="switch">
+                    <input type="checkbox" id="arm-slider" onchange="toggleArm()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
     </div>
-    <div class="card">
-      <i class="fas fa-tachometer-alt"></i>
-      <span class="val"><span id="speed-val">0</span></span>
-      <small>KM/H</small>
-    </div>
-  </div>
 
-  <a href="#" id="glink" target="_blank" class="btn-gmaps">VIEW ON GOOGLE MAPS</a>
-</div>
+    <script>
+        // --- CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDiSckMMD055k9cxend3oesbv2B2MBwOjI",
+            databaseURL: "https://bikegps-1ae85-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDiSckMMD055k9cxend3oesbv2B2MBwOjI",
-    databaseURL: "https://bikegps-1ae85-default-rtdb.asia-southeast1.firebasedatabase.app"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+        // --- MAP SETUP ---
+        const map = L.map('map', { zoomControl: false }).setView([23.81, 90.41], 16);
+        L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3']
+        }).addTo(map);
 
-  const map = L.map('map').setView([23.81, 90.41], 15);
-  L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { subdomains: ['mt0','mt1','mt2','mt3'] }).addTo(map);
-  const marker = L.marker([23.81, 90.41]).addTo(map);
+        const customIcon = L.divIcon({
+            html: `<div style="background:var(--primary); width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 0 15px var(--primary)"></div>`,
+            className: ''
+        });
+        const marker = L.marker([23.81, 90.41], { icon: customIcon }).addTo(map);
 
-  db.ref("bikeTracker").on("value", snap => {
-    const d = snap.val();
-    if (d) {
-      if(d.latitude && d.longitude) {
-        marker.setLatLng([d.latitude, d.longitude]);
-        map.panTo([d.latitude, d.longitude]);
-        document.getElementById('glink').href = `https://www.google.com/maps?q=${d.latitude},${d.longitude}`;
-      }
-      
-      // Update Battery
-      const bPct = d.battery || 0;
-      document.getElementById('battery-pct').innerText = bPct;
-      document.getElementById('speed-val').innerText = (d.speed || 0).toFixed(1);
+        let currentLat, currentLng;
 
-      // Change battery icon color
-      const icon = document.getElementById('bat-icon');
-      if (bPct > 70) icon.style.color = "#2ecc71";
-      else if (bPct > 25) icon.style.color = "#f1c40f";
-      else icon.style.color = "#e74c3c";
-    }
-  });
-</script>
+        // --- FIREBASE SYNC ---
+        db.ref("bikeTracker").on("value", snap => {
+            const data = snap.val();
+            if (!data) return;
+
+            currentLat = data.latitude;
+            currentLng = data.longitude;
+            const speed = data.speed || 0;
+            const battery = data.battery || 0;
+
+            // Update UI Text
+            document.getElementById('speed-val').innerText = speed.toFixed(1);
+            document.getElementById('battery-val').innerText = battery;
+            document.getElementById('connection-dot').classList.add('online');
+            document.getElementById('connection-text').innerText = "LIVE CONNECTION";
+
+            // Map Update
+            const pos = [currentLat, currentLng];
+            marker.setLatLng(pos);
+            map.panTo(pos);
+
+            // Motion Detection Logic
+            const motionEl = document.getElementById('motion-status');
+            if(speed > 2) {
+                motionEl.innerHTML = `<i class="fas fa-running"></i> DETECTED MOVEMENT`;
+                motionEl.className = "motion-card motion-alert";
+            } else {
+                motionEl.innerHTML = `<i class="fas fa-parking"></i> STATIONARY`;
+                motionEl.className = "motion-card motion-idle";
+            }
+
+            // Sync Slider UI if changed from another device
+            if(data.isLocked !== undefined) {
+                const slider = document.getElementById('arm-slider');
+                const armText = document.getElementById('arm-text');
+                slider.checked = data.isLocked;
+                armText.innerText = data.isLocked ? "SYSTEM ARMED" : "DISARMED";
+                armText.style.color = data.isLocked ? "#2ed573" : "#94a3b8";
+            }
+        });
+
+        function toggleArm() {
+            const isChecked = document.getElementById('arm-slider').checked;
+            db.ref("bikeTracker").update({ isLocked: isChecked });
+        }
+
+        function openGoogleMaps() {
+            if(currentLat && currentLng) {
+                window.open(`https://www.google.com/maps?q=${currentLat},${currentLng}`, '_blank');
+            }
+        }
+    </script>
 </body>
 </html>
