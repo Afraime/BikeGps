@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BikeLive Pro | Security Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PixmeGPS | Smart Tracker</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -12,7 +12,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -20,54 +20,141 @@
             --danger: #ff4757;
             --success: #2ed573;
             --bg: #0f172a;
-            --card: rgba(30, 41, 59, 0.7);
+            --card: rgba(15, 23, 42, 0.9);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg); color: #f8fafc; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        
+        body, html { 
+            height: 100%; 
+            width: 100%; 
+            background: var(--bg); 
+            overflow: hidden; 
+            position: fixed; /* Prevents bounce scrolling on iOS */
+        }
 
-        /* Full Screen Map Background */
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
+        /* Full Screen Map */
+        #map { 
+            position: absolute; 
+            top: 0; 
+            bottom: 0; 
+            width: 100%; 
+            z-index: 1; 
+        }
 
-        /* Overlay UI */
-        .overlay { position: relative; z-index: 10; pointer-events: none; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
-        .pointer-events { pointer-events: auto; }
+        /* Top Header Area */
+        .header-overlay {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+        }
 
-        /* Top Bar */
-        .top-bar { display: flex; justify-content: space-between; align-items: flex-start; }
-        .glass-card { background: var(--card); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        .brand-pill {
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            pointer-events: auto;
+        }
 
-        .brand h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 1px; color: #fff; }
-        .status-badge { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; margin-top: 5px; color: #94a3b8; }
-        .dot { height: 8px; width: 8px; border-radius: 50%; background: #64748b; transition: 0.3s; }
+        .brand-pill h1 { font-size: 1rem; font-weight: 800; letter-spacing: 0.5px; }
+
+        .btn-gmaps {
+            height: 45px;
+            width: 45px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            pointer-events: auto;
+            text-decoration: none;
+        }
+
+        /* Bottom Info Panel (Mobile Optimized) */
+        .bottom-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 15px;
+            right: 15px;
+            z-index: 10;
+            background: var(--card);
+            backdrop-filter: blur(15px);
+            border-radius: 28px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.2);
+        }
+
+        .status-strip {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .connection-status { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; color: #94a3b8; font-weight: 600; }
+        .dot { height: 8px; width: 8px; border-radius: 50%; background: #475569; }
         .dot.online { background: var(--success); box-shadow: 0 0 10px var(--success); }
 
-        /* Stats Section */
-        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 20px; width: 300px; }
-        .stat-item { text-align: center; }
-        .stat-item i { font-size: 1.2rem; color: var(--primary); margin-bottom: 8px; }
-        .stat-item span { display: block; font-size: 1.5rem; font-weight: 700; }
-        .stat-item label { font-size: 0.65rem; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; }
+        .main-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
 
-        /* Bottom Controls */
-        .bottom-controls { display: flex; justify-content: center; align-items: center; gap: 20px; padding-bottom: 20px; }
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 18px;
+            text-align: center;
+        }
 
-        /* Slider Toggle (iOS Style) */
-        .switch-container { display: flex; align-items: center; gap: 15px; background: var(--card); padding: 10px 25px; border-radius: 50px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .stat-card i { color: var(--primary); font-size: 1.2rem; margin-bottom: 5px; }
+        .stat-card span { display: block; font-size: 1.4rem; font-weight: 800; color: white; }
+        .stat-card label { font-size: 0.6rem; color: #94a3b8; text-transform: uppercase; }
+
+        /* Arm Slider */
+        .arm-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.2);
+            padding: 12px 20px;
+            border-radius: 20px;
+        }
+
+        .arm-label { font-size: 0.85rem; font-weight: 700; color: #94a3b8; }
+        .arm-label.active { color: var(--success); }
+
+        .switch { position: relative; display: inline-block; width: 55px; height: 28px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--success); }
-        input:checked + .slider:before { transform: translateX(26px); }
+        input:checked + .slider:before { transform: translateX(27px); }
 
-        .btn-round { height: 60px; width: 60px; border-radius: 50%; background: var(--primary); border: none; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; transition: 0.3s; }
-        .btn-round:hover { transform: scale(1.1); }
-
-        /* Movement Indicator */
-        .motion-card { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); padding: 10px 30px; border-radius: 15px; font-weight: 700; transition: 0.5s; font-size: 0.9rem; }
-        .motion-idle { background: rgba(30, 41, 59, 0.9); color: #94a3b8; }
-        .motion-alert { background: var(--danger); color: white; animation: pulse 1s infinite; }
+        /* Motion Indicator */
+        #motion-tag {
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: #1e293b;
+            color: #94a3b8;
+        }
+        .motion-alert { background: var(--danger) !important; color: white !important; animation: pulse 1s infinite; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
     </style>
@@ -76,53 +163,47 @@
 
     <div id="map"></div>
 
-    <div class="overlay">
-        <div class="top-bar">
-            <div class="glass-card pointer-events">
-                <div class="brand">
-                    <h1>BIKE<span style="color:var(--primary)">LIVE</span> PRO</h1>
-                    <div class="status-badge">
-                        <div id="connection-dot" class="dot"></div>
-                        <span id="connection-text">DEVICE OFFLINE</span>
-                    </div>
-                </div>
+    <div class="header-overlay">
+        <div class="brand-pill">
+            <h1>PIXME<span style="color:var(--primary)">GPS</span></h1>
+        </div>
+        <a href="#" id="glink" target="_blank" class="btn-gmaps">
+            <i class="fab fa-google"></i>
+        </a>
+    </div>
 
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <i class="fas fa-battery-three-quarters"></i>
-                        <span id="battery-val">--</span>
-                        <label>Battery %</label>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-gauge-high"></i>
-                        <span id="speed-val">0.0</span>
-                        <label>KM/H</label>
-                    </div>
-                </div>
+    <div class="bottom-panel">
+        <div class="status-strip">
+            <div class="connection-status">
+                <div id="dot" class="dot"></div>
+                <span id="conn-text">SEARCHING...</span>
             </div>
-
-            <button class="btn-round pointer-events" onclick="openGoogleMaps()">
-                <i class="fab fa-google"></i>
-            </button>
+            <div id="motion-tag">STATIONARY</div>
         </div>
 
-        <div id="motion-status" class="motion-card motion-idle">
-            <i class="fas fa-parking"></i> STATIONARY
+        <div class="main-stats">
+            <div class="stat-card">
+                <i class="fas fa-battery-half"></i>
+                <span id="bat-val">--</span>
+                <label>Battery %</label>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-wind"></i>
+                <span id="spd-val">0</span>
+                <label>KM/H Speed</label>
+            </div>
         </div>
 
-        <div class="bottom-controls">
-            <div class="switch-container pointer-events">
-                <span id="arm-text" style="font-weight: 700; color: #94a3b8;">DISARMED</span>
-                <label class="switch">
-                    <input type="checkbox" id="arm-slider" onchange="toggleArm()">
-                    <span class="slider"></span>
-                </label>
-            </div>
+        <div class="arm-container">
+            <span id="arm-status" class="arm-label">SYSTEM DISARMED</span>
+            <label class="switch">
+                <input type="checkbox" id="arm-switch" onchange="handleArm()">
+                <span class="slider"></span>
+            </label>
         </div>
     </div>
 
     <script>
-        // --- CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyDiSckMMD055k9cxend3oesbv2B2MBwOjI",
             databaseURL: "https://bikegps-1ae85-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -130,70 +211,57 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // --- MAP SETUP ---
-        const map = L.map('map', { zoomControl: false }).setView([23.81, 90.41], 16);
+        // Map Setup - Centered at 0,0 until data arrives
+        const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([23.81, 90.41], 16);
         L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3']
         }).addTo(map);
 
-        const customIcon = L.divIcon({
-            html: `<div style="background:var(--primary); width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 0 15px var(--primary)"></div>`,
-            className: ''
-        });
-        const marker = L.marker([23.81, 90.41], { icon: customIcon }).addTo(map);
+        const marker = L.circleMarker([23.81, 90.41], {
+            radius: 10, color: '#fff', weight: 3, opacity: 1, fillOpacity: 1, fillColor: '#4285F4'
+        }).addTo(map);
 
-        let currentLat, currentLng;
-
-        // --- FIREBASE SYNC ---
         db.ref("bikeTracker").on("value", snap => {
             const data = snap.val();
-            if (!data) return;
+            if(!data) return;
 
-            currentLat = data.latitude;
-            currentLng = data.longitude;
-            const speed = data.speed || 0;
-            const battery = data.battery || 0;
+            // Update GPS
+            if(data.latitude && data.longitude) {
+                const pos = [data.latitude, data.longitude];
+                marker.setLatLng(pos);
+                map.panTo(pos);
+                document.getElementById('glink').href = `https://www.google.com/maps?q=${data.latitude},${data.longitude}`;
+            }
 
-            // Update UI Text
-            document.getElementById('speed-val').innerText = speed.toFixed(1);
-            document.getElementById('battery-val').innerText = battery;
-            document.getElementById('connection-dot').classList.add('online');
-            document.getElementById('connection-text').innerText = "LIVE CONNECTION";
+            // Update Stats
+            document.getElementById('bat-val').innerText = data.battery || 0;
+            document.getElementById('spd-val').innerText = (data.speed || 0).toFixed(0);
+            
+            // Connection Dot
+            document.getElementById('dot').className = "dot online";
+            document.getElementById('conn-text').innerText = "LIVE NOW";
 
-            // Map Update
-            const pos = [currentLat, currentLng];
-            marker.setLatLng(pos);
-            map.panTo(pos);
-
-            // Motion Detection Logic
-            const motionEl = document.getElementById('motion-status');
-            if(speed > 2) {
-                motionEl.innerHTML = `<i class="fas fa-running"></i> DETECTED MOVEMENT`;
-                motionEl.className = "motion-card motion-alert";
+            // Movement Alert
+            const mTag = document.getElementById('motion-tag');
+            if(data.speed > 2) {
+                mTag.innerText = "MOVING";
+                mTag.classList.add('motion-alert');
             } else {
-                motionEl.innerHTML = `<i class="fas fa-parking"></i> STATIONARY`;
-                motionEl.className = "motion-card motion-idle";
+                mTag.innerText = "STATIONARY";
+                mTag.classList.remove('motion-alert');
             }
 
-            // Sync Slider UI if changed from another device
-            if(data.isLocked !== undefined) {
-                const slider = document.getElementById('arm-slider');
-                const armText = document.getElementById('arm-text');
-                slider.checked = data.isLocked;
-                armText.innerText = data.isLocked ? "SYSTEM ARMED" : "DISARMED";
-                armText.style.color = data.isLocked ? "#2ed573" : "#94a3b8";
-            }
+            // Sync Slider
+            const sw = document.getElementById('arm-switch');
+            const lbl = document.getElementById('arm-status');
+            sw.checked = data.isLocked;
+            lbl.innerText = data.isLocked ? "SYSTEM ARMED" : "SYSTEM DISARMED";
+            data.isLocked ? lbl.classList.add('active') : lbl.classList.remove('active');
         });
 
-        function toggleArm() {
-            const isChecked = document.getElementById('arm-slider').checked;
-            db.ref("bikeTracker").update({ isLocked: isChecked });
-        }
-
-        function openGoogleMaps() {
-            if(currentLat && currentLng) {
-                window.open(`https://www.google.com/maps?q=${currentLat},${currentLng}`, '_blank');
-            }
+        function handleArm() {
+            const state = document.getElementById('arm-switch').checked;
+            db.ref("bikeTracker").update({ isLocked: state });
         }
     </script>
 </body>
