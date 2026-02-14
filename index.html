@@ -90,15 +90,22 @@
 </head>
 <body>
 
-    <div id="login-overlay">
-        <div class="login-card">
-            <h2>PIXME<span style="color:var(--primary)">GPS</span></h2>
-            <input type="email" id="email" placeholder="Email Address">
-            <input type="password" id="password" placeholder="Password">
-            <button onclick="login()">SECURE LOGIN</button>
-            <p id="error-msg" style="color: #ff4757; font-size: 0.8rem; margin-top: 15px;"></p>
+  <div id="login-overlay">
+    <div class="login-card">
+        <h2>PIXME<span style="color:var(--primary)">GPS</span></h2>
+        <input type="email" id="email" placeholder="Email Address">
+        <input type="password" id="password" placeholder="Password">
+        
+        <button onclick="login()">SECURE LOGIN</button>
+        
+        <div style="margin-top: 15px;">
+            <a href="#" onclick="forgotPassword()" style="color: #94a3b8; font-size: 0.75rem; text-decoration: none;">Forgot Password?</a>
         </div>
+
+        <p id="error-msg" style="color: #ff4757; font-size: 0.8rem; margin-top: 15px;"></p>
+        <p id="success-msg" style="color: #2ed573; font-size: 0.8rem; margin-top: 15px;"></p>
     </div>
+</div>
 
     <div id="dashboard-ui">
         <div id="map"></div>
@@ -186,6 +193,38 @@
             const state = document.getElementById('arm-toggle').checked;
             db.ref("bikeTracker").update({ isLocked: state });
         }
+        // 1. LOGIN FUNCTION
+function login() {
+    const e = document.getElementById('email').value;
+    const p = document.getElementById('password').value;
+    
+    if(!e || !p) {
+        document.getElementById('error-msg').innerText = "Please enter email and password.";
+        return;
+    }
+
+    auth.signInWithEmailAndPassword(e, p).catch(err => {
+        document.getElementById('error-msg').innerText = err.message;
+        document.getElementById('success-msg').innerText = "";
+    });
+}
+
+// 2. FORGOT PASSWORD FUNCTION
+function forgotPassword() {
+    const e = document.getElementById('email').value;
+    
+    if (!e) {
+        document.getElementById('error-msg').innerText = "Please enter your email first.";
+        return;
+    }
+
+    auth.sendPasswordResetEmail(e).then(() => {
+        document.getElementById('success-msg').innerText = "Reset link sent to your email!";
+        document.getElementById('error-msg').innerText = "";
+    }).catch(err => {
+        document.getElementById('error-msg').innerText = err.message;
+    });
+}
     </script>
 </body>
 </html>
