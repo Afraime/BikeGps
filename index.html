@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PixmeGPS | Pro Tracker</title>
+    <title>PixmeGPS | Secure Login</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -11,23 +11,21 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
             --primary: #4285F4;
-            --danger: #ff4757;
-            --success: #2ed573;
             --bg: #0f172a;
             --glass: rgba(15, 23, 42, 0.9);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif !important; }
-        body, html { height: 100%; width: 100%; background: var(--bg); overflow: hidden; position: fixed; color: white; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body, html { height: 100%; width: 100%; background: var(--bg); overflow: hidden; position: fixed; }
 
-        /* --- LOGIN SCREEN --- */
+        /* Login Overlay */
         #login-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -36,141 +34,108 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: 0.5s;
         }
 
         .login-card {
             background: var(--glass);
-            backdrop-filter: blur(20px);
-            padding: 40px 30px;
-            border-radius: 32px;
+            padding: 40px;
+            border-radius: 30px;
             width: 90%;
-            max-width: 380px;
+            max-width: 350px;
             text-align: center;
-            border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
 
-        .login-logo { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 35px; color: #ffffff; }
-        .login-logo span { color: var(--primary); }
-
+        .login-card h2 { margin-bottom: 30px; letter-spacing: 2px; color: white; }
+        .login-card h2 span { color: var(--primary); }
+        
         .login-card input {
-            width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
-            color: white; font-size: 1rem; outline: none;
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            border: none;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            outline: none;
         }
-        .login-card input:focus { border-color: var(--primary); }
 
         .login-card button {
-            width: 100%; padding: 16px; margin-top: 10px; border-radius: 16px;
-            border: none; background: var(--primary); color: white;
-            font-weight: 700; font-size: 1rem; cursor: pointer;
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            font-weight: 800;
+            cursor: pointer;
         }
 
-        .forgot-link { display: inline-block; margin-top: 20px; color: #94a3b8; font-size: 0.85rem; text-decoration: none; }
+        .forgot-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            margin-top: 15px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
 
-        /* --- DASHBOARD UI --- */
-        #dashboard-ui { display: none; height: 100%; width: 100%; }
+        /* Dashboard (Hidden by Default) */
+        #dashboard-ui { display: none; }
+
         #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
-
-        /* Header Bar */
-        .header-bar {
-            position: absolute; top: 15px; left: 10px; right: 10px; z-index: 10;
-            display: flex; align-items: center; gap: 10px; pointer-events: none;
-        }
-
-        .glass-pill {
-            background: var(--glass); backdrop-filter: blur(15px); padding: 8px 18px;
-            border-radius: 50px; border: 1px solid rgba(255,255,255,0.1);
-            color: white; display: flex; align-items: center; gap: 15px;
-            pointer-events: auto; flex-grow: 1; justify-content: space-between;
-        }
-
-        .nav-logo { font-weight: 800; font-size: 0.9rem; color: white; }
-        .nav-logo span { color: var(--primary); }
-
-        .data-group { display: flex; gap: 15px; align-items: center; }
-        .data-item { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; }
-        .data-item i { color: var(--primary); }
-
-        .btn-gmaps {
-            height: 48px; width: 48px; background: var(--primary); color: white;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            border: 2px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            pointer-events: auto; text-decoration: none;
-        }
-
-        /* Bottom Panel */
-        .bottom-panel {
-            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
-            z-index: 10; width: 92%; max-width: 400px;
-        }
-
-        .arm-card {
-            background: var(--glass); backdrop-filter: blur(15px); border-radius: 28px;
-            padding: 18px 25px; display: flex; justify-content: space-between;
-            align-items: center; border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .switch { position: relative; width: 55px; height: 30px; }
+        .header-bar { position: absolute; top: 15px; left: 10px; right: 10px; z-index: 10; display: flex; align-items: center; gap: 10px; }
+        .glass-pill { background: var(--glass); backdrop-filter: blur(15px); padding: 8px 15px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.1); color: white; display: flex; align-items: center; gap: 12px; flex-grow: 1; justify-content: space-between; }
+        .btn-gmaps { height: 48px; width: 48px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); text-decoration: none; }
+        
+        .bottom-panel { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 10; width: 90%; max-width: 400px; }
+        .arm-card { background: var(--glass); backdrop-filter: blur(15px); border-radius: 30px; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.1); }
+        
+        .switch { position: relative; width: 60px; height: 32px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--success); }
-        input:checked + .slider:before { transform: translateX(25px); }
-
-        #moving-overlay {
-            position: absolute; top: 75px; left: 50%; transform: translateX(-50%);
-            background: var(--danger); color: white; padding: 5px 15px;
-            border-radius: 8px; font-size: 0.7rem; font-weight: 800; display: none; z-index: 5;
-        }
+        .slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #2ed573; }
+        input:checked + .slider:before { transform: translateX(28px); }
     </style>
 </head>
 <body>
 
     <div id="login-overlay">
         <div class="login-card">
-            <div class="login-logo">PIXME<span>GPS</span></div>
+            <h2>PIXME<span>GPS</span></h2>
             <input type="email" id="email" placeholder="Email Address">
             <input type="password" id="password" placeholder="Password">
             <button onclick="login()">SECURE LOGIN</button>
-            <a href="#" onclick="forgotPassword()" class="forgot-link">Forgot Password?</a>
-            <p id="error-msg" style="color: #ff4757; font-size: 0.85rem; margin-top: 20px;"></p>
-            <p id="success-msg" style="color: #2ed573; font-size: 0.85rem; margin-top: 20px;"></p>
+            <br>
+            <button class="forgot-btn" onclick="forgotPassword()">Forgot Password?</button>
+            <p id="error-msg" style="color: #ff4757; font-size: 0.8rem; margin-top: 15px;"></p>
+            <p id="success-msg" style="color: #2ed573; font-size: 0.8rem; margin-top: 15px;"></p>
         </div>
     </div>
 
     <div id="dashboard-ui">
         <div id="map"></div>
-        <div id="moving-overlay">MOTION DETECTED</div>
-
         <div class="header-bar">
             <div class="glass-pill">
-                <div class="nav-logo">PIXME<span>GPS</span></div>
-                
-                <div class="data-group">
-                    <div class="data-item">
-                        <i class="fas fa-battery-three-quarters"></i>
-                        <span id="bat-txt">--</span>%
-                    </div>
-                    <div class="data-item">
-                        <i class="fas fa-tachometer-alt"></i>
-                        <span id="spd-txt">0</span>
-                    </div>
+                <div style="font-weight:800; color: white;">PIXME<span style="color:var(--primary)">GPS</span></div>
+                <div style="display:flex; gap:12px; font-size:0.85rem; color: white;">
+                    <span><i class="fas fa-battery-three-quarters"></i> <b id="bat-txt">--</b>%</span>
+                    <span><i class="fas fa-gauge"></i> <b id="spd-txt">0</b> km/h</span>
                 </div>
-
                 <i class="fas fa-sign-out-alt" onclick="logout()" style="cursor:pointer; color:#94a3b8"></i>
             </div>
-            
-            <a href="#" id="gmap-btn" target="_blank" class="btn-gmaps">
-                <i class="fab fa-google"></i>
-            </a>
+            <a href="#" id="gmap-btn" target="_blank" class="btn-gmaps"><i class="fab fa-google"></i></a>
         </div>
 
         <div class="bottom-panel">
             <div class="arm-card">
                 <div>
-                    <div style="font-size:0.7rem; color:#94a3b8; font-weight: 800;">SECURITY MODE</div>
-                    <div id="arm-label" style="font-weight:800;">DISARMED</div>
+                    <div style="font-size:0.7rem; color:#94a3b8">SECURITY MODE</div>
+                    <div id="arm-label" style="font-weight:800; color: white;">DISARMED</div>
                 </div>
                 <label class="switch">
                     <input type="checkbox" id="arm-toggle" onchange="updateArm()">
@@ -189,23 +154,32 @@
         const auth = firebase.auth();
         const db = firebase.database();
 
+        // Login Logic
         function login() {
             const e = document.getElementById('email').value;
             const p = document.getElementById('password').value;
             auth.signInWithEmailAndPassword(e, p).catch(err => {
-                document.getElementById('error-msg').innerText = "Incorrect login.";
+                document.getElementById('success-msg').innerText = "";
+                document.getElementById('error-msg').innerText = "Incorrect login credentials.";
             });
         }
 
+        // Forgot Password Logic
         function forgotPassword() {
             const e = document.getElementById('email').value;
-            if(!e) { document.getElementById('error-msg').innerText = "Enter email first."; return; }
+            if(!e) {
+                document.getElementById('error-msg').innerText = "Please enter email first.";
+                return;
+            }
             auth.sendPasswordResetEmail(e).then(() => {
-                document.getElementById('success-msg').innerText = "Email sent!";
-            }).catch(err => { document.getElementById('error-msg').innerText = "Email not found."; });
+                document.getElementById('error-msg').innerText = "";
+                document.getElementById('success-msg').innerText = "Reset link sent to your email!";
+            }).catch(err => {
+                document.getElementById('error-msg').innerText = "Email not found.";
+            });
         }
 
-        function logout() { auth.signOut().then(() => location.reload()); }
+        function logout() { auth.signOut(); location.reload(); }
 
         auth.onAuthStateChanged(user => {
             if (user) {
@@ -226,20 +200,16 @@
             db.ref("bikeTracker").on("value", snap => {
                 const data = snap.val();
                 if(!data) return;
-
                 if(data.latitude) {
                     marker.setLatLng([data.latitude, data.longitude]);
                     map.panTo([data.latitude, data.longitude]);
                     document.getElementById('gmap-btn').href = `https://www.google.com/maps?q=${data.latitude},${data.longitude}`;
                 }
-
                 document.getElementById('bat-txt').innerText = data.battery || 0;
                 document.getElementById('spd-txt').innerText = Math.round(data.speed || 0);
-                document.getElementById('moving-overlay').style.display = (data.speed > 2) ? "block" : "none";
                 document.getElementById('arm-toggle').checked = data.isLocked;
-                const lbl = document.getElementById('arm-label');
-                lbl.innerText = data.isLocked ? "SYSTEM ARMED" : "DISARMED";
-                lbl.style.color = data.isLocked ? "#2ed573" : "#fff";
+                document.getElementById('arm-label').innerText = data.isLocked ? "SYSTEM ARMED" : "DISARMED";
+                document.getElementById('arm-label').style.color = data.isLocked ? "#2ed573" : "#fff";
             });
         }
 
