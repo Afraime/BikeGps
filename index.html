@@ -197,32 +197,54 @@
 function login() {
     const e = document.getElementById('email').value;
     const p = document.getElementById('password').value;
-    
+    const errorEl = document.getElementById('error-msg');
+    const successEl = document.getElementById('success-msg');
+
     if(!e || !p) {
-        document.getElementById('error-msg').innerText = "Please enter email and password.";
+        errorEl.innerText = "Please enter email and password.";
         return;
     }
 
     auth.signInWithEmailAndPassword(e, p).catch(err => {
-        document.getElementById('error-msg').innerText = err.message;
-        document.getElementById('success-msg').innerText = "";
+        // This line extracts the readable part of the error
+        let friendlyMsg = "";
+        
+        switch (err.code) {
+            case 'auth/invalid-credential':
+            case 'auth/wrong-password':
+            case 'auth/user-not-found':
+                friendlyMsg = "Invalid email or password.";
+                break;
+            case 'auth/invalid-email':
+                friendlyMsg = "That email address is not valid.";
+                break;
+            case 'auth/user-disabled':
+                friendlyMsg = "This account has been disabled.";
+                break;
+            default:
+                friendlyMsg = "Login failed. Please try again.";
+        }
+
+        errorEl.innerText = friendlyMsg;
+        successEl.innerText = "";
     });
 }
 
-// 2. FORGOT PASSWORD FUNCTION
 function forgotPassword() {
     const e = document.getElementById('email').value;
+    const errorEl = document.getElementById('error-msg');
+    const successEl = document.getElementById('success-msg');
     
     if (!e) {
-        document.getElementById('error-msg').innerText = "Please enter your email first.";
+        errorEl.innerText = "Please enter your email first.";
         return;
     }
 
     auth.sendPasswordResetEmail(e).then(() => {
-        document.getElementById('success-msg').innerText = "Reset link sent to your email!";
-        document.getElementById('error-msg').innerText = "";
+        successEl.innerText = "Check your inbox! Reset link sent.";
+        errorEl.innerText = "";
     }).catch(err => {
-        document.getElementById('error-msg').innerText = err.message;
+        errorEl.innerText = "Could not find that email address.";
     });
 }
     </script>
